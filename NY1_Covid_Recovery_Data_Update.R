@@ -136,30 +136,30 @@ error = function(e) {
 #             col_names = F)
 Sys.sleep(3)
 downloadLinks <- tryCatch({
-  nyDOLIndexNum <- read_html("https://dol.ny.gov/weekly-ui-claims-report") %>%
-    html_node(css = ".page-body" ) %>% 
-    html_nodes("a") %>% 
-    map_chr(html_text) %>% 
-    map(lubridate::mdy) %>% 
-    detect_index(~.x == weekOfAnalysisDate)
+  # nyDOLIndexNum <- read_html("https://dol.ny.gov/weekly-ui-claims-report") %>%
+  #   html_node(css = ".page-body" ) %>% 
+  #   html_nodes("a") %>% 
+  #   map_chr(html_text) %>% 
+  #   map(lubridate::mdy) %>% 
+  #   detect_index(~.x == weekOfAnalysisDate)
+  # 
+  # nycUILastestWeekPDFURLEnd <- read_html("https://dol.ny.gov/weekly-ui-claims-report") %>%
+  #   html_node(css = ".page-body" ) %>% 
+  #   html_nodes("a") %>% 
+  #   nth(nyDOLIndexNum) %>% 
+  #   html_attr("href")
   
-  nycUILastestWeekPDFURLEnd <- read_html("https://dol.ny.gov/weekly-ui-claims-report") %>%
-    html_node(css = ".page-body" ) %>% 
-    html_nodes("a") %>% 
-    nth(nyDOLIndexNum) %>% 
-    html_attr("href")
   
-  
-  nycUILastestWeekPDFURL <- paste0("https://dol.ny.gov", nycUILastestWeekPDFURLEnd)
+  # nycUILastestWeekPDFURL <- paste0("https://dol.ny.gov", nycUILastestWeekPDFURLEnd)
   
   downloadURLS <- c("https://raw.githubusercontent.com/nychealth/coronavirus-data/master/latest/now-data-by-day.csv",
                     "https://new.mta.info/document/20441",
-                    nycUILastestWeekPDFURL)
+                    "https://oui.doleta.gov/unemploy/csv/ar539.csv")
   
   
   fileNames <- c(paste0("../NY1_Covid_Recovery_Downloads/", paste(weekOfAnalysisDate, "nycCovidHospitalizations.csv", sep = "_")),
                  paste0("../NY1_Covid_Recovery_Downloads/", paste(weekOfAnalysisDate, "nycMTASubwayRidership.csv", sep = "_")),
-                 paste0("../NY1_Covid_Recovery_Downloads/", paste(weekOfAnalysisDate, "nyWeeklyUIClaims.pdf", sep = "_")))
+                 paste0("../NY1_Covid_Recovery_Downloads/", paste(weekOfAnalysisDate, "dolWeeklyUIClaims.csv", sep = "_")))
   
   safe_download <- safely(~download.file(.x, .y, method = "curl", quiet = F, extra = "-L"))
   walk2(downloadURLS, fileNames, safe_download)
@@ -262,38 +262,65 @@ mtaUpdate <- tryCatch(
 Sys.sleep(3)
 ### UI Data
 uiUpdate <- tryCatch({
-  nycUI <- pdftools::pdf_text(paste0("../NY1_Covid_Recovery_Downloads/", paste(weekOfAnalysisDate, "nyWeeklyUIClaims.pdf", sep = "_")))
   
-  sheetNum <- which(map_lgl(nycUI, ~str_detect(.x, "Over-the-Year Change in Initial Claims by Region")))
+  nyDOLWeeklyUIClaims <- read_csv(paste0("../NY1_Covid_Recovery_Downloads/", paste(weekOfAnalysisDate, "dolWeeklyUIClaims.csv", sep = "_")),
+                                col_types = cols(col_character(),
+                                                 col_date("%m/%d/%Y"),
+                                                 col_skip(),
+                                                 col_skip(),
+                                                 col_integer(),
+                                                 .default = col_skip()),
+                                col_names = c("State", "Report_Date", "Initial_Claims"),
+                                skip = 1) %>% 
+    filter(State == "NY", Report_Date == weekOfAnalysisDate) %>% 
+    pull(Initial_Claims)
   
-  nycUIDate <- nycUI[sheetNum] %>% str_extract("\\d{1,2}/\\d{1,2}/\\d{4}") %>% mdy()
+  # nycUI <- pdftools::pdf_text(paste0("../NY1_Covid_Recovery_Downloads/", paste(weekOfAnalysisDate, "nyWeeklyUIClaims.pdf", sep = "_")))
+  # 
+  # sheetNum <- which(map_lgl(nycUI, ~str_detect(.x, "Over-the-Year Change in Initial Claims by Region")))
+  # 
+  # nycUIDate <- nycUI[sheetNum] %>% str_extract("\\d{1,2}/\\d{1,2}/\\d{4}") %>% mdy()
+  # 
+  # if (nycUIDate != weekOfAnalysisDate) {
+  #   stop("NYC DOL week date does not match week of analysis date")
+  # }
+  # 
+  # nycUILatest <- nycUI[sheetNum] %>% 
+  #   str_match("New York City.*") %>% 
+  #   str_remove_all(",") %>% 
+  #   str_split("\\s{2,}") %>%
+  #   unlist() %>% 
+  #   as_tibble_row(.name_repair = "universal") %>%
+  #   rename_with(~c("Region", "Latest_Week", "Previous_Week",
+  #                        "Year_Ago", "OTY_Net_Change", "OTY_Pct_Change")) %>% 
+  #   mutate(WoW_Change = as.integer(Latest_Week) - as.integer(Previous_Week), 
+  #          OTY_Pct_Change = as.integer(str_remove(OTY_Pct_Change, "%")) / 100,
+  #          Date = weekOfAnalysisDate) %>%
+  #   mutate(across(c(2:5), as.integer)) %>% 
+  #   relocate(Date, Region, WoW_Change, everything())
   
-  if (nycUIDate != weekOfAnalysisDate) {
-    stop("NYC DOL week date does not match week of analysis date")
-  }
+  fullNYCUI <- read_csv("./dataFiles/NYCUI.csv", col_types = "Dciiiiiiddd")
   
-  nycUILatest <- nycUI[sheetNum] %>% 
-    str_match("New York City.*") %>% 
-    str_remove_all(",") %>% 
-    str_split("\\s{2,}") %>%
-    unlist() %>% 
-    as_tibble_row(.name_repair = "universal") %>%
-    rename_with(~c("Region", "Latest_Week", "Previous_Week",
-                         "Year_Ago", "OTY_Net_Change", "OTY_Pct_Change")) %>% 
-    mutate(WoW_Change = as.integer(Latest_Week) - as.integer(Previous_Week), 
-           OTY_Pct_Change = as.integer(str_remove(OTY_Pct_Change, "%")) / 100,
-           Date = weekOfAnalysisDate) %>%
-    mutate(across(c(2:5), as.integer)) %>% 
-    relocate(Date, Region, WoW_Change, everything())
+  nycUILatestWIndex <- tibble_row(
+    Date = weekOfAnalysisDate,
+    Region = "New York City",
+    Initial_Claims_Statewide = nyDOLWeeklyUIClaims,
+    Latest_Week = round(nyDOLWeeklyUIClaims * last(fullNYCUI$NYC_to_State_Prop)),
+    Previous_Week = last(fullNYCUI$Latest_Week),
+    WoW_Change = Latest_Week - Previous_Week,
+    Year_Ago = pull(fullNYCUI[nrow(fullNYCUI) - 51, "Year_Ago"]),
+    OTY_Net_Change = Latest_Week - Year_Ago,
+    OTY_Pct_Change = (Latest_Week - Year_Ago) / Year_Ago,
+    `Unemployment Claims Index` = 100 / ((100 * OTY_Pct_Change) + 100) * 100,
+    NYC_to_State_Prop = NA
+  )
   
-  fullNYCUI <- read_csv("./dataFiles/NYCUI.csv", col_types = "Dciiiiidd")
-  
-  nycUILatest["Year_Ago"] <- pull(fullNYCUI[nrow(fullNYCUI) - 51, "Year_Ago"])
-  
-  nycUILatestWIndex <- nycUILatest %>% 
-    mutate(OTY_Net_Change = Latest_Week - Year_Ago, 
-           OTY_Pct_Change = (Latest_Week - Year_Ago) / Year_Ago,
-           `Unemployment Claims Index` = 100 / ((100 * OTY_Pct_Change) + 100) * 100)
+  # nycUILatest["Year_Ago"] <- pull(fullNYCUI[nrow(fullNYCUI) - 51, "Year_Ago"])
+  # 
+  # nycUILatestWIndex <- nycUILatest %>% 
+  #   mutate(OTY_Net_Change = Latest_Week - Year_Ago, 
+  #          OTY_Pct_Change = (Latest_Week - Year_Ago) / Year_Ago,
+  #          `Unemployment Claims Index` = 100 / ((100 * OTY_Pct_Change) + 100) * 100)
   
   updatedNYCUI <- bind_rows(fullNYCUI, nycUILatestWIndex)
   
