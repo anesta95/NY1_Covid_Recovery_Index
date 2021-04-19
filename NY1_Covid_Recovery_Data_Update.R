@@ -305,7 +305,7 @@ uiUpdate <- tryCatch({
     Date = weekOfAnalysisDate,
     Region = "New York City",
     Initial_Claims_Statewide = nyDOLWeeklyUIClaims,
-    Latest_Week = round(nyDOLWeeklyUIClaims * last(fullNYCUI$NYC_to_State_Prop)),
+    Latest_Week = round(nyDOLWeeklyUIClaims * last(na.omit(fullNYCUI$NYC_to_State_Prop))),
     Previous_Week = last(fullNYCUI$Latest_Week),
     WoW_Change = Latest_Week - Previous_Week,
     Year_Ago = pull(fullNYCUI[nrow(fullNYCUI) - 51, "Year_Ago"]),
