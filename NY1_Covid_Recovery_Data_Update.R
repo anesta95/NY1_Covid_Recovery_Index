@@ -42,9 +42,13 @@ weekOfAnalysisDate <- list.files("~/NY1_Covid_Recovery_Downloads") %>%
 Sys.sleep(3)
 otUpdate <- tryCatch({
   
-  otRawText <- read_html("https://www.opentable.com/state-of-industry") %>%
-    html_nodes("script") %>%
-    nth(22) %>%
+  otScripts <- read_html("https://www.opentable.com/state-of-industry") %>%
+    html_nodes("script")
+  
+  otDataScript <- which(map_lgl(map_chr(otScripts, html_text), ~str_detect(.x, "__INITIAL_STATE__")))
+  
+  otRawText <- otScripts %>%
+    nth(otDataScript) %>%
     html_text()
   
   Sys.sleep(5)
