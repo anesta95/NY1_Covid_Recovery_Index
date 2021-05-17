@@ -560,7 +560,23 @@ dataFileUpdate <- tryCatch({
   
   
   WoWChange <- map_dfr(latestWeeks[2:7], diff) %>% 
-    mutate(`New York City Recovery Index` = sum(map_dbl(select(filter(latestWeeks, Date == weekOfAnalysisDate), -Date), ~.x/6)) - sum(map_dbl(select(filter(latestWeeks, Date == weekOfAnalysisDate - 7), -Date), ~.x/6))) %>% 
+    mutate(`New York City Recovery Index` = sum(
+      map_dbl(
+        select(
+          filter(
+            latestWeeks, Date == weekOfAnalysisDate
+            ), -Date
+          ), ~.x/6
+        )) - sum(
+          map_dbl(
+            select(
+              filter(
+                latestWeeks, Date == weekOfAnalysisDate - 7
+                ), -Date
+              ), ~.x/6
+            )
+          )
+      ) %>% 
     relocate(`New York City Recovery Index`, everything()) %>% 
     pivot_longer(everything(), names_to = "DATE", values_to = as.character(weekOfAnalysisDate))
   
