@@ -303,20 +303,43 @@ uiUpdate <- tryCatch({
   #   mutate(across(c(2:5), as.integer)) %>% 
   #   relocate(Date, Region, WoW_Change, everything())
   
-  fullNYCUI <- read_csv("./dataFiles/NYCUI.csv", col_types = "Dciiiiiiddd")
+  fullNYCUI <- read_csv("./dataFiles/NYCUI.csv", col_types = "Dciiiiiidddid")
+  
+  nycUIPropEst <- read_csv("../NY1_Covid_Recovery_Downloads/nycPredictedUIPercentages.csv",
+                           col_types = "di")
+  
+  fullNYCUIEst <- fullNYCUI %>% 
+    left_join(nycUIPropEst, by = "isoweek")
+  
+  ## Need to import Tibble of weeks with _expected_ NYC to NYS UI proportion to use for
+  ## The predicted value.
   
   nycUILatestWIndex <- tibble_row(
     Date = weekOfAnalysisDate,
     Region = "New York City",
     Initial_Claims_Statewide = nyDOLWeeklyUIClaims,
-    Latest_Week = round(nyDOLWeeklyUIClaims * last(na.omit(fullNYCUI$NYC_to_State_Prop))),
+    Latest_Week = round(nyDOLWeeklyUIClaims * pull(
+      filter(
+      nycUIPropEst, isoweek == isoweek(weekOfAnalysisDate)
+      ), predicted_from_2020
+      )),
     Previous_Week = last(fullNYCUI$Latest_Week),
     WoW_Change = Latest_Week - Previous_Week,
     Year_Ago = pull(fullNYCUI[nrow(fullNYCUI) - 51, "Year_Ago"]),
     OTY_Net_Change = Latest_Week - Year_Ago,
     OTY_Pct_Change = (Latest_Week - Year_Ago) / Year_Ago,
     `Unemployment Claims Index` = 100 / ((100 * OTY_Pct_Change) + 100) * 100,
-    NYC_to_State_Prop = NA
+    NYC_to_State_Prop = pull(
+      filter(
+        nycUIPropEst, isoweek == isoweek(weekOfAnalysisDate)
+      ), predicted_from_2020
+    ),
+    isoweek = isoweek(weekOfAnalysisDate),
+    predicted_from_2020 = pull(
+      filter(
+        nycUIPropEst, isoweek == isoweek(weekOfAnalysisDate)
+      ), predicted_from_2020
+    )
   )
   
   # nycUILatest["Year_Ago"] <- pull(fullNYCUI[nrow(fullNYCUI) - 51, "Year_Ago"])
@@ -326,7 +349,7 @@ uiUpdate <- tryCatch({
   #          OTY_Pct_Change = (Latest_Week - Year_Ago) / Year_Ago,
   #          `Unemployment Claims Index` = 100 / ((100 * OTY_Pct_Change) + 100) * 100)
   
-  updatedNYCUI <- bind_rows(fullNYCUI, nycUILatestWIndex)
+  updatedNYCUI <- bind_rows(fullNYCUIEst, nycUILatestWIndex)
   
 }, 
 error = function(e) {
