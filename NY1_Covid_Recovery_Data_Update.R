@@ -303,10 +303,10 @@ uiUpdate <- tryCatch({
   #   mutate(across(c(2:5), as.integer)) %>% 
   #   relocate(Date, Region, WoW_Change, everything())
   
-  fullNYCUI <- read_csv("./dataFiles/NYCUI.csv", col_types = "Dciiiiiidddid")
+  fullNYCUI <- read_csv("./dataFiles/NYCUI.csv", col_types = "Dciiiiiidddi")
   
   nycUIPropEst <- read_csv("../NY1_Covid_Recovery_Downloads/nycPredictedUIPercentages.csv",
-                           col_types = "di")
+                           col_types = "ddi")
   
   fullNYCUIEst <- fullNYCUI %>% 
     left_join(nycUIPropEst, by = "isoweek")
@@ -327,7 +327,12 @@ uiUpdate <- tryCatch({
     WoW_Change = Latest_Week - Previous_Week,
     Year_Ago = pull(fullNYCUI[nrow(fullNYCUI) - 51, "Year_Ago"]),
     OTY_Net_Change = Latest_Week - Year_Ago,
-    OTY_Pct_Change = (Latest_Week - Year_Ago) / Year_Ago,
+    `2019_rolling_average` = pull(
+      filter(
+        nycUIPropEst, isoweek == isoweek(weekOfAnalysisDate)
+      ), `2019_rolling_average`
+    ),
+    OTY_Pct_Change = (Latest_Week - `2019_rolling_average`) / `2019_rolling_average`,
     `Unemployment Claims Index` = 100 / ((100 * OTY_Pct_Change) + 100) * 100,
     NYC_to_State_Prop = pull(
       filter(
@@ -348,7 +353,7 @@ uiUpdate <- tryCatch({
   #   mutate(OTY_Net_Change = Latest_Week - Year_Ago, 
   #          OTY_Pct_Change = (Latest_Week - Year_Ago) / Year_Ago,
   #          `Unemployment Claims Index` = 100 / ((100 * OTY_Pct_Change) + 100) * 100)
-  
+  # 
   updatedNYCUI <- bind_rows(fullNYCUIEst, nycUILatestWIndex)
   
 }, 
