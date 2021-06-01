@@ -16,7 +16,7 @@ library(zoo)
 drive_auth(email = "anesta@dotdash.com")
 gs4_auth(token = drive_token())
 
-weekOfAnalysisDate <- list.files("~/NY1_Covid_Recovery_Downloads") %>% 
+weekOfAnalysisDate <- list.files("../NY1_Covid_Recovery_Downloads") %>% 
   str_match_all("\\d{4}-\\d{2}-\\d{2}_.*") %>%
   compact() %>% 
   str_extract_all("\\d{4}-\\d{2}-\\d{2}") %>% 
@@ -303,7 +303,7 @@ uiUpdate <- tryCatch({
   #   mutate(across(c(2:5), as.integer)) %>% 
   #   relocate(Date, Region, WoW_Change, everything())
   
-  fullNYCUI <- read_csv("./dataFiles/NYCUI.csv", col_types = "Dciiiiiidddi")
+  fullNYCUI <- read_csv("./dataFiles/NYCUI.csv", col_types = "Dciiiiiidddidd")
   
   nycUIPropEst <- read_csv("../NY1_Covid_Recovery_Downloads/nycPredictedUIPercentages.csv",
                            col_types = "ddi")
@@ -633,7 +633,7 @@ if (any(map_lgl(list(otUpdate, downloadLinks, mtaUpdate, uiUpdate, covidUpdate,
   write_csv(indexRecoveryOverviewLatest, "./dataFiles/nycRecoveryIndexOverview.csv")
   # Push to Git
   Sys.sleep(2)
-  shell(cmd = "./pushToGit.ps1", shell = "powershell")
+  system(command = "./pushToGit.sh")
 }
 
 
