@@ -11,6 +11,7 @@ library(rjson)
 library(xml2)
 library(rvest)
 library(zoo)
+library(magrittr)
 
 ### Write into the Google Sheets
 drive_auth(email = "anesta@dotdash.com")
@@ -53,39 +54,48 @@ otUpdate <- tryCatch({
   otData <- otRawJSON %>%
     fromJSON(json_str = .)
   
+  otChrDates <- otData %>% 
+    extract2("covidDataCenter") %>% 
+    extract2("rollingAverage2021") %>% 
+    extract2("headers") %>% 
+    map_chr("displayDate")
   
-  otDates <- otData %>% 
-    magrittr::extract2(2) %>% 
-    magrittr::extract2(1) %>% 
-    magrittr::extract2(1) %>% 
-    lubridate::ymd()
+  otChrDatesMDY <- otChrDates[1:62] %>% lubridate::mdy()
+  otChrDatesYMD <- otChrDates[63:length(otChrDates)] %>% lubridate::ymd()
   
-  otDatesFixed <- seq.Date(from = base::as.Date("2020-02-18"), by = "day", length.out = length(otDates))
+  otDates <- c(otChrDatesMDY, otChrDatesYMD)
+  
+  otDatesFixed <- seq.Date(from = base::as.Date("2021-01-01"), by = "day", length.out = length(otDates))
   
   if (any(otDates != otDatesFixed)) {
     stop("Open Table dates do not align")  
   }
   
+  
   otYoY <- otData %>% 
-    magrittr::extract2(2) %>% 
-    magrittr::extract2(1) %>% 
-    magrittr::extract2(4) %>% 
+    extract2("covidDataCenter") %>% 
+    extract2("rollingAverage2021") %>% 
+    extract2("cities") %>% 
     map_dfr(., ~tibble(
-      YoY = .$yoy,
+      YoY = .$rollingAverageYoY,
       city = .$name
     )) %>% 
     filter(city == "New York")
   
+  otOld <- read_csv("./dataFiles/openTable.csv", 
+                    col_types = "iDddd")
   
-  openTableReady <- otYoY %>% 
+  openTableReadyNew <- otYoY %>% 
     mutate(Date = otDatesFixed) %>% 
     pivot_wider(names_from = "city", values_from = "YoY") %>% 
-    rename(`OpenTable YoY Seated Diner Data (%)` = `New York`) %>% 
+    rename(`7-day Average` = `New York`) %>% 
     mutate(`Day of Week` = c(seq(2, 7, 1), rep_len(seq(1, 7, 1), nrow(.) - 6)),
-           `7-day Average` = rollmean(`OpenTable YoY Seated Diner Data (%)`, 7, fill = NA, align = "right"),
+           `OpenTable YoY Seated Diner Data (%)` = NA_integer_,
            `Restaurant Reservations Index` = `7-day Average` + 100) %>% 
-    relocate(`Day of Week`, .before = Date)  
+    relocate(`Day of Week`, .before = Date) %>% 
+    filter(Date > max(otOld$Date))
   
+  openTableReady <- bind_rows(otOld, openTableReadyNew)
   
   }, 
 error = function(e) {
