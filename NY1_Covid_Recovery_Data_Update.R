@@ -427,22 +427,3 @@ if (any(map_lgl(list(otUpdate, mtaUpdate, uiUpdate, covidUpdate,
   system(command = "./pushToGit.sh")
 }
 
-
-
-
-
-# nycRentalRow <- ((as.integer(nycUIDate) + 7 - as.integer(base::as.Date("2020-01-04"))) / 7) + 6
-# 
-# 
-# range_write(ss = "1uyDve2TAuFs8NrWPaZt9fbM2LbmfGMmj6JMFK8WO5vw",
-#             data = latestNYCRental,
-#             sheet = "RENTALS Index",
-#             range = paste0("E", nycRentalRow),
-#             col_names = F)
-# 
-# range_write(ss = "1uyDve2TAuFs8NrWPaZt9fbM2LbmfGMmj6JMFK8WO5vw",
-#             data = tibble(todaysDate = Sys.Date()),
-#             sheet = "RENTALS Index",
-#             range = "B5",
-#             col_names = F)
-
