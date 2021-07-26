@@ -139,7 +139,7 @@ Sys.sleep(3)
 mtaUpdate <- tryCatch(
   { 
 
-    mtaRidershipNYC <- read_csv("https://new.mta.info/document/20441", col_types = "cicicicicicic_") %>% 
+    mtaRidershipNYC <- read_csv("https://new.mta.info/document/20441", col_types = "cicicicicicic") %>% 
       select(Date, `Subways: Total Estimated Ridership`, `Subways: % Change From Pre-Pandemic Equivalent Day`) %>% 
       mutate(`Subways: % Change From Pre-Pandemic Equivalent Day` = as.double(str_remove_all(`Subways: % Change From Pre-Pandemic Equivalent Day`, "%")) / 100,
              Date = mdy(Date)) %>% 
@@ -203,8 +203,8 @@ uiUpdate <- tryCatch({
       )),
     Previous_Week = last(fullNYCUI$Latest_Week),
     WoW_Change = Latest_Week - Previous_Week,
-    Year_Ago = pull(fullNYCUI[nrow(fullNYCUI) - 51, "Year_Ago"]),
-    OTY_Net_Change = Latest_Week - Year_Ago,
+    Year_Ago = pull(fullNYCUI[nrow(fullNYCUI) - 51, "Year_Ago"]), # fix this so it's off of Latest_Week column
+    OTY_Net_Change = Latest_Week - Year_Ago, # Also fix
     `2019_rolling_average` = pull(
       filter(
         nycUIPropEst, isoweek == isoweek(weekOfAnalysisDate)
@@ -424,6 +424,6 @@ if (any(map_lgl(list(otUpdate, mtaUpdate, uiUpdate, covidUpdate,
   write_csv(indexRecoveryOverviewLatest, "./dataFiles/nycRecoveryIndexOverview.csv")
   # Push to Git
   Sys.sleep(2)
-  system(command = "./pushToGit.sh")
+  # system(command = "./pushToGit.sh")
 }
 
