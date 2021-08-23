@@ -243,7 +243,7 @@ Sys.sleep(3)
 covidUpdate <- tryCatch({
   
   newNYCCovid19Hospitalizations <- read_csv("https://raw.githubusercontent.com/nychealth/coronavirus-data/master/latest/now-data-by-day.csv",
-           col_types = "ciiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii") %>% 
+           col_types = "ciiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii") %>% 
     select(date_of_interest, HOSPITALIZED_COUNT) %>% 
     mutate(date_of_interest = mdy(date_of_interest),
            rolling_seven = rollmean(HOSPITALIZED_COUNT, k = 7, fill = NA, align = "right"),
