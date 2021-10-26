@@ -183,7 +183,7 @@ uiUpdate <- tryCatch({
   
   fullNYCUI <- read_csv("./dataFiles/NYCUI.csv", col_types = "Dciiiiiidddidd")
   
-  nycUIPropEst <- read_csv("../NY1_Covid_Recovery_Downloads/nycPredictedUIPercentages.csv",
+  nycUIPropEst <- read_csv("./dataFiles/nycPredictedUIPercentages.csv",
                            col_types = "ddi")
   
   # fullNYCUIEst <- fullNYCUI %>% 
