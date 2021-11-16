@@ -65,11 +65,9 @@ otUpdate <- tryCatch({
   
   otDates <- c(otChrDatesMDY, otChrDatesYMD)
   
-  otDatesFixed <- seq.Date(from = base::as.Date("2021-01-01"), by = "day", length.out = length(otDates))
-  
-  if (any(otDates != otDatesFixed)) {
-    stop("Open Table dates do not align")  
-  }
+  # if (any(otDates != otDatesFixed)) {
+  #   stop("Open Table dates do not align")  
+  # }
   
   
   otYoY <- otData %>% 
@@ -82,6 +80,8 @@ otUpdate <- tryCatch({
     )) %>% 
     filter(city == "New York")
   
+  otDatesFixed <- seq.Date(from = base::as.Date("2021-01-01"), by = "day", length.out = length(otYoY$YoY))
+  
   otOld <- read_csv("./dataFiles/openTable.csv", 
                     col_types = "iDddd")
   
@@ -93,7 +93,7 @@ otUpdate <- tryCatch({
            `OpenTable YoY Seated Diner Data (%)` = NA_integer_,
            `Restaurant Reservations Index` = `7-day Average` + 100) %>% 
     relocate(`Day of Week`, .before = Date) %>% 
-    filter(Date > max(otOld$Date))
+    filter(Date > max(otOld$Date) & Date <= weekOfAnalysisDate)
   
   openTableReady <- bind_rows(otOld, openTableReadyNew)
   
