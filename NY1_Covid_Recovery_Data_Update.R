@@ -141,11 +141,11 @@ mtaUpdate <- tryCatch(
 
     mtaRidershipNYC <- read_csv("https://new.mta.info/document/20441", col_types = "cicicicicicic") %>% 
       select(Date, `Subways: Total Estimated Ridership`, `Subways: % of Comparable Pre-Pandemic Day`) %>% 
-      mutate(`Subways: % of Comparable Pre-Pandemic Day` = as.double(str_remove_all(`Subways: % of Comparable Pre-Pandemic Day`, "%")) / 100,
+      mutate(`Subways: % of Comparable Pre-Pandemic Day` = (as.double(str_remove_all(`Subways: % of Comparable Pre-Pandemic Day`, "%")) - 100) / 100,
              Date = mdy(Date)) %>% 
-      mutate(`7-day Averge` = rollmean(`Subways: % of Comparable Pre-Pandemic Day`, k = 7, fill = NA, align = "left"),
-             `Subway Mobility Index` = (1 + `7-day Averge`) * 100) %>% 
       arrange(Date) %>% 
+      mutate(`7-day Average` = rollmean(`Subways: % of Comparable Pre-Pandemic Day`, k = 7, fill = NA, align = "right"),
+             `Subway Mobility Index` = (1 + `7-day Average`) * 100) %>% 
       mutate(`Day of Week` = c(7, rep_len(seq(1, 7, 1), nrow(.) - 1)),
              `Avg. Ridership` = rollmean(`Subways: Total Estimated Ridership`, k = 7, fill = NA, align = "right")) %>% 
       relocate(`Day of Week`, .before = Date) %>% 
