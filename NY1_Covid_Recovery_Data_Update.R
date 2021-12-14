@@ -243,9 +243,11 @@ Sys.sleep(3)
 covidUpdate <- tryCatch({
   
   newNYCCovid19Hospitalizations <- read_csv("https://raw.githubusercontent.com/nychealth/coronavirus-data/master/latest/now-data-by-day.csv",
-           col_types = "ciiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii") %>% 
+                                            col_types = cols(.default = col_character()), col_names = T) %>% 
+           #col_types = "ciiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii") %>% 
     select(date_of_interest, HOSPITALIZED_COUNT) %>% 
     mutate(date_of_interest = mdy(date_of_interest),
+           HOSPITALIZED_COUNT = as.integer(HOSPITALIZED_COUNT),
            rolling_seven = rollmean(HOSPITALIZED_COUNT, k = 7, fill = NA, align = "right"),
            log_hosp = log10(rolling_seven + 1),
            `Covid-19 Hospitalizations Index` = (1 - log_hosp / 3.5) * 100) %>% 
@@ -401,7 +403,7 @@ error = function(e) {
 if (any(map_lgl(list(otUpdate, mtaUpdate, uiUpdate, covidUpdate, 
                      homeSalesUpdate, rentalsUpdate, dataFileUpdate
                      ), ~class(.x)[2] == "rlang_error"), na.rm = T)) {
-  stop("There was an error in the updated, deleting updated files...")
+  stop("There was an error in the update, check the error log to see more.")
   #file.remove(Sys.glob(paste0("../NY1_Covid_Recovery_Downloads/", weekOfAnalysisDate, "*")))
 } else {
   print("Data update was successful! Writing files and pushing to Git...")
@@ -422,8 +424,5 @@ if (any(map_lgl(list(otUpdate, mtaUpdate, uiUpdate, covidUpdate,
   write_csv(indexRecoveryOverviewLatest, paste0("./vizFiles/", weekOfAnalysisDate, "_DW_NYC_Recovery_Index_Overview.csv")) 
   Sys.sleep(2)
   write_csv(indexRecoveryOverviewLatest, "./dataFiles/nycRecoveryIndexOverview.csv")
-  # Push to Git
-  Sys.sleep(2)
-  # system(command = "./pushToGit.sh")
 }
 
